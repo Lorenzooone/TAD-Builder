@@ -1,0 +1,8 @@
+command_check_sign="check_file_sign"
+command_sign="sign_file"
+command_enc_nds_rom="encrypt_nds_rom"
+command_create_ticket="ticket_build"
+command_create_tmd="tmd_build"
+command_create_cert="cert_build"
+command_create_tad="tad_build"
+command_create_tad_nosign="tad_build_no_sign"
