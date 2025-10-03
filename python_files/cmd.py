@@ -35,10 +35,10 @@ def cmd_create(content_id, index, type_content, decrypted_content):
 
 # Creates the CMD for a DSi file.
 # In theory it should also support non-ROM files.
-def cmd_create_dsi(content_base_id, decrypted_content):
-	content_id = create_id("content" + str(0), content_base_id)[:content_id_size]
-	return cmd_create(content_id, 0, [0, 1], decrypted_content)
+def cmd_create_dsi(content_base_id, index, decrypted_content):
+	content_id = create_id("content" + str(index), content_base_id)[:content_id_size]
+	return cmd_create(content_id, index, [0, 1], decrypted_content)
 
 # Creates the CMD for a DSi ROM.
-def cmd_create_dsi_rom(uncrypted_nds_rom):
-	return cmd_create_dsi(get_title_id_from_rom(uncrypted_nds_rom), uncrypted_nds_rom)
+def cmd_get_content_base_id_dsi_rom(uncrypted_nds_rom):
+	return get_title_id_from_rom(uncrypted_nds_rom)

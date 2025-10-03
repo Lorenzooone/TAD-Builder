@@ -1,5 +1,5 @@
-from .enc_dec import sign_data, create_id, encrypt_title_key, decrypt_title_key
-from .cmd import cmd_create_dsi_rom
+from .enc_dec import sign_data, create_id, encrypt_title_key, decrypt_title_key, pad_data_to_enc
+from .cmd import cmd_create_dsi, cmd_get_content_base_id_dsi_rom
 from .nds_rom_header import *
 from .utils import *
 from .key_sig import getKeySignatureKind
@@ -25,7 +25,7 @@ boot_content_size = 2
 
 # Creates the initial part of a TMD (Title MetaData). Before any CMD (Content MetaData).
 # Returns an empty list in case of an error.
-def tmd_create_base(title_id, title_version, group_id, pubic_sav_size, private_sav_size, parental_control, num_contents, boot_content, signer_data):
+def tmd_create_base(title_id, title_version, group_id, pubic_sav_size, private_sav_size, parental_control, signer_data):
 	key_signature_kind = getKeySignatureKind(signer_data.kind)
 	if key_signature_kind is None:
 		print("Issue finding signature key")
@@ -34,15 +34,6 @@ def tmd_create_base(title_id, title_version, group_id, pubic_sav_size, private_s
 	tmd_size = data_pos + tmd_size_base
 
 	tmd = [0] * tmd_size
-
-	if num_contents <= 0:
-		print("TMD num contents error!")
-		return []
-
-	if boot_content >= num_contents:
-		print("TMD boot content error!")
-		return []
-
 
 	signer_name_bytes = signer_data.get_name_bytes(signer_size)
 
@@ -64,18 +55,54 @@ def tmd_create_base(title_id, title_version, group_id, pubic_sav_size, private_s
 
 	write_bytes_to_list_of_bytes(tmd, data_pos + title_version_offset, title_version)
 
-	write_int_to_list_of_bytes(tmd, data_pos + num_contents_offset, num_contents, num_contents_size)
-
-	write_int_to_list_of_bytes(tmd, data_pos + boot_content_offset, boot_content, boot_content_size)
-
 	return tmd
 
-# Creates the TMD for a NDS ROM.
+# Creates the TMD from multiple files.
 # Extracts various data needed to create the TMD from the NDS ROM,
 # and then calls tmd_create_base with it.
 # Also appends the single CMD of the NDS ROM.
 # Uses the signer and the private key to sign the TMD + CMD.
-def tmd_create_rom(nds_rom, signer_data):
+def tmd_add_content_multiple(tmd, data_list, boot_content_index, content_base_id, signer_data):
+	key_signature_kind = getKeySignatureKind(signer_data.kind)
+	if key_signature_kind is None:
+		print("Issue finding signature key")
+		return []
+	data_pos = key_signature_kind.tosign_pos
+
+	num_contents = len(data_list)
+
+	if num_contents <= 0:
+		print("TMD num contents error!")
+		return []
+
+	if boot_content_index >= num_contents:
+		print("TMD boot content error!")
+		return []
+
+	write_int_to_list_of_bytes(tmd, data_pos + num_contents_offset, num_contents, num_contents_size)
+
+	write_int_to_list_of_bytes(tmd, data_pos + boot_content_offset, boot_content_index, boot_content_size)
+
+	for i in range(num_contents):
+		tmd += cmd_create_dsi(content_base_id, i, data_list[i])
+
+	return tmd
+
+def pad_data_list_for_tmd(data_list):
+	for i in range(len(data_list)):
+		data_list[i] = pad_data_to_enc(data_list[i])
+	return data_list
+
+# Creates the TMD for a NDS ROM.
+# Supports multiple contents.
+# Extracts various data needed to create the TMD from the NDS ROM,
+# and then calls tmd_create_base with it.
+# Also appends the single CMD of the NDS ROM.
+# Uses the signer and the private key to sign the TMD + CMD.
+def tmd_create_rom(data_list, nds_rom_index, signer_data):
+	data_list = pad_data_list_for_tmd(data_list)
+	nds_rom = data_list[nds_rom_index]
+
 	title_id = get_title_id_from_rom(nds_rom)
 	title_version = nds_rom[nds_rom_location_version:nds_rom_location_version + dsi_version_size]
 	group_id = nds_rom[nds_rom_location_group_id:nds_rom_location_group_id + nds_groud_id_size]
@@ -83,10 +110,19 @@ def tmd_create_rom(nds_rom, signer_data):
 	private_sav_size = nds_rom[dsi_rom_location_private_sav_size:dsi_rom_location_private_sav_size + dsi_private_sav_size_size]
 	parental_control = nds_rom[dsi_rom_location_parental_control:dsi_rom_location_parental_control + dsi_parental_control_size]
 
-	tmd = tmd_create_base(title_id, title_version, group_id, pubic_sav_size, private_sav_size, parental_control, 1, 0, signer_data)
+	tmd = tmd_create_base(title_id, title_version, group_id, pubic_sav_size, private_sav_size, parental_control, signer_data)
 
-	tmd += cmd_create_dsi_rom(nds_rom)
+	tmd = tmd_add_content_multiple(tmd, data_list, nds_rom_index, cmd_get_content_base_id_dsi_rom(nds_rom), signer_data)
 
 	tmd = sign_data(bytes(tmd), signer_data)
 
 	return tmd
+
+# Creates the TMD for a NDS ROM.
+# Supports only one content.
+# Extracts various data needed to create the TMD from the NDS ROM,
+# and then calls tmd_create_base with it.
+# Also appends the single CMD of the NDS ROM.
+# Uses the signer and the private key to sign the TMD + CMD.
+def tmd_create_solo_nds_rom(nds_rom, signer_data):
+	return tmd_create_rom([nds_rom], 0, signer_data)

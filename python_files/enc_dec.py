@@ -83,6 +83,12 @@ def decrypt_title_key_nds_rom(nds_rom, enc_title_key, common_key):
 
 	return decrypt_title_key(title_id, enc_title_key, common_key)
 
+# Pads data for encryption, needed for TMDs and TADs...
+def pad_data_to_enc(data):
+	if (len(data) % cbc_block_size) != 0:
+		data += bytes([0] * (cbc_block_size - (len(data) % cbc_block_size)))
+	return data
+
 # Turns data into encrypted content.
 # Uses the unencrypted title_key as the AES CBC Key.
 # content_iv is the index of the content inside the TAD.
@@ -91,8 +97,7 @@ def data_to_enc_content(data, title_key, content_iv):
 	aes = pyaes.AESModeOfOperationCBC(title_key, iv=bytes(content_iv))
 	out = []
 
-	if (len(data) % cbc_block_size) != 0:
-		data += [0] * (cbc_block_size - (len(data) % cbc_block_size))
+	data = pad_data_to_enc(data)
 
 	for i in range(int(len(data) / cbc_block_size)):
 		#print("Block " + str(i))
@@ -100,11 +105,16 @@ def data_to_enc_content(data, title_key, content_iv):
 
 	return out
 
+# Turns data into encrypted content.
+def data_to_enc_content_init_iv(data, index, title_key):
+	content_iv = [0] * cbc_block_size
+	write_int_to_list_of_bytes(content_iv, 0, index, 2)
+	return data_to_enc_content(data, title_key, content_iv)
+
 # Turns a NDS ROM into encrypted content.
 # content_iv is set to index 0 (as that is always the index of the NDS ROM).
 def nds_rom_to_enc_content_init_iv(nds_rom, title_key):
-	content_iv = [0] * cbc_block_size
-	return data_to_enc_content(nds_rom, title_key, content_iv)
+	return data_to_enc_content_init_iv(nds_rom, 0, title_key)
 
 # Returns the properly padded sha1 of to_check.
 # Currently only supports RSA2048.

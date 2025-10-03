@@ -1,6 +1,6 @@
-from .enc_dec import nds_rom_to_enc_content_init_iv, is_signature_valid
+from .enc_dec import data_to_enc_content_init_iv, is_signature_valid
 from .ticket import ticket_create_rom
-from .tmd import tmd_create_rom
+from .tmd import tmd_create_rom, pad_data_list_for_tmd
 from .nds_rom_header import boundary_align
 from .utils import *
 from .cert import read_certchain
@@ -41,6 +41,10 @@ def tad_add_section(tad, section):
 # The sections themselves are then appended after the header, in order.
 def tad_create_base(tad_import_string, cert_chain, ticket, tmd, enc_content):
 
+	enc_contents_blob = []
+	for i in range(len(enc_content)):
+		enc_contents_blob += enc_content[i]
+
 	tad = [0] * tad_header_size
 
 	write_int_to_list_of_bytes(tad, tad_header_size_pos, tad_header_size, tad_header_size_size)
@@ -56,27 +60,33 @@ def tad_create_base(tad_import_string, cert_chain, ticket, tmd, enc_content):
 
 	write_int_to_list_of_bytes(tad, tad_tmd_size_pos, len(tmd), tad_tmd_size_size)
 
-	write_int_to_list_of_bytes(tad, tad_enc_content_size_pos, len(enc_content), tad_enc_content_size_size)
+	write_int_to_list_of_bytes(tad, tad_enc_content_size_pos, len(enc_contents_blob), tad_enc_content_size_size)
 
 	tad = tad_add_section(tad, cert_chain)
 	tad = tad_add_section(tad, ticket)
 	tad = tad_add_section(tad, tmd)
-	tad = tad_add_section(tad, enc_content)
+	tad = tad_add_section(tad, enc_contents_blob)
 
 	return tad
 
 # Function which from a NDS ROM produces a TAD.
+# Supports multiple contents.
 # The input parameters are used to create the ticket,
 # the TMD (Title MetaData) and the encrypted content.
 # These and cert_chain are then combined by tad_create_base
 # to create the actual TAD.
-def tad_create_rom(nds_rom, cert_chain, ecdh_data, common_key, ticket_signer_data, tmd_signer_data, tad_import_string = "Is"):
+def tad_create_rom(data_list, nds_rom_index, cert_chain, ecdh_data, common_key, ticket_signer_data, tmd_signer_data, tad_import_string = "Is"):
+	data_list = pad_data_list_for_tmd(data_list)
+
+	nds_rom = data_list[nds_rom_index]
 	cert_signer_data_list = read_certchain(cert_chain)
 	fill_signer_data_name_with_list(cert_signer_data_list, ticket_signer_data, "TIK", "Could not find ticket key in cert!")
 	fill_signer_data_name_with_list(cert_signer_data_list, tmd_signer_data, "TMD", "Could not find TMD key in cert!")
 	title_key, ticket = ticket_create_rom(nds_rom, ecdh_data, common_key, ticket_signer_data)
-	tmd = tmd_create_rom(nds_rom, tmd_signer_data)
-	enc_content = nds_rom_to_enc_content_init_iv(nds_rom, title_key)
+	tmd = tmd_create_rom(data_list, nds_rom_index, tmd_signer_data)
+	enc_content = []
+	for i in range(len(data_list)):
+		enc_content += [data_to_enc_content_init_iv(data_list[i], i, title_key)]
 
 	if not is_signature_valid(ticket, ticket_signer_data):
 		print("Ticket signing error!")
@@ -87,3 +97,12 @@ def tad_create_rom(nds_rom, cert_chain, ecdh_data, common_key, ticket_signer_dat
 		return []
 
 	return tad_create_base(tad_import_string, cert_chain, ticket, tmd, enc_content)
+
+# Function which from a NDS ROM produces a TAD.
+# Supports only one content.
+# The input parameters are used to create the ticket,
+# the TMD (Title MetaData) and the encrypted content.
+# These and cert_chain are then combined by tad_create_base
+# to create the actual TAD.
+def tad_create_solo_nds_rom(nds_rom, cert_chain, ecdh_data, common_key, ticket_signer_data, tmd_signer_data, tad_import_string = "Is"):
+	return tad_create_rom([nds_rom], 0, cert_chain, ecdh_data, common_key, ticket_signer_data, tmd_signer_data, tad_import_string = tad_import_string)

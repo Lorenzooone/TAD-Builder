@@ -2,9 +2,9 @@ import sys
 from python_files.enc_dec import *
 from python_files.key_file_reader_writer import read_key_file, write_key_file
 from python_files.ticket import ticket_create_rom
-from python_files.tmd import tmd_create_rom
+from python_files.tmd import tmd_create_rom, tmd_create_solo_nds_rom
 from python_files.cert import cert_create
-from python_files.tad import tad_create_rom
+from python_files.tad import tad_create_rom, tad_create_solo_nds_rom
 from python_files.signer import Signer
 from python_files.file_io import *
 from python_files.menu_commands import *
@@ -132,10 +132,11 @@ def main_create_tmd(filtered_argv, menu_option):
 		return
 	signer_data = signer_assigner(filtered_argv[1], filtered_argv[2])
 
-	tmd = tmd_create_rom(nds_rom, signer_data)
+	# tmd_create_rom supports multiple content
+	tmd = tmd_create_solo_nds_rom(nds_rom, signer_data)
 
 	if len(tmd) == 0:
-		# Already errored out in tmd_create_rom...?!
+		# Already errored out in tmd_create_solo_nds_rom...?!
 		return
 
 	tmd = bytes(tmd)
@@ -198,7 +199,8 @@ def main_create_tad(filtered_argv, menu_option):
 
 	tmd_signer_data = signer_assigner("", filtered_argv[5])
 
-	tad = bytes(tad_create_rom(nds_rom, cert_chain, ecdh_data, common_key, ticket_signer_data, tmd_signer_data))
+	# tad_create_rom supports multiple contents...
+	tad = bytes(tad_create_solo_nds_rom(nds_rom, cert_chain, ecdh_data, common_key, ticket_signer_data, tmd_signer_data))
 
 	out_path = "out.tad"
 	if len(filtered_argv) > 6:
