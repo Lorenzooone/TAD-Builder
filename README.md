@@ -1,6 +1,6 @@
 # TAD Builder
 TAD Builder is a Python script to build a TAD, an installable DSiWare channel, as well as offering related functions.
-TAD Builder in particular can be used to build homebrew TADs compatible with development consoles and NMenu with the tad\_build command.
+TAD Builder in particular can be used to build homebrew TADs compatible with development consoles and TwlNmenu with the tad\_build command.
 tad\_build\_no\_sign can be used to build non-encrypted and non-signed homebrew TADs, which can be used with Unlaunch on retail consoles.
 
 ## Commands
@@ -49,4 +49,4 @@ In particular, one can find xs\_dpki.rsa and cp\_dpki.rsa by searching for the s
 - It is possible to use this tool to repackage a retail homebrew TAD you dumped for a development console. Use [decrypt_tad](https://gist.github.com/rvtr/f1069530129b7a57967e3fc4b30866b4) to extract the NDS ROM, then use [ntool](https://github.com/smiRaphi/ntool) with the srl_retail2dev command. Finally, TAD Builder may be used to create a working development TAD.
 - Commands can be quite long. Using scripts is advised.
 - By default TAD Builder does not support WAD files (which are extremely similar to TAD files), but it could be expanded to do so.
-- Self created certificates do not work for TADs (crash at startup), but they may work for WADs.
+- Self created certificates do not work for TADs (crash at startup, seems to be hardcoded to use the right certificates), but they may work for WADs.
