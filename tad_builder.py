@@ -246,16 +246,18 @@ def main(filtered_argv):
 
 	to_help = False
 	to_option_help = False
+	first_command = ""
 	if len(filtered_argv) < 1:
 		print("Missing command!")
 		to_help = True
+	else:
+		first_command = filtered_argv[0].strip().lower()
 
-	first_command = filtered_argv[0].strip().lower()
 	if (first_command == "-h") or (first_command == "--help"):
 		to_help = True
 
 	menu_option = menus_dict.get(first_command)
-	if menu_option is None:
+	if (not to_help) and (menu_option is None):
 		print("Command " + first_command + " not available!")
 		to_help = True
 
@@ -271,7 +273,7 @@ def main(filtered_argv):
 			to_option_help = True
 			break
 
-	if len(next_filtered_argv) < menu_option.inner_help.num_obbligatory:
+	if (not to_option_help) and (len(next_filtered_argv) < menu_option.inner_help.num_obbligatory):
 		print("Not enough arguments!")
 		to_option_help = True
 
