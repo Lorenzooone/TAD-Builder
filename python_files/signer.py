@@ -64,9 +64,23 @@ class Signer:
 			return False
 		return True
 
+	def __str__(self):
+		if (self.name is not None) and (self.name != ""):
+			return self.name
+		return "No Name"
+
+	def __repr__(self):
+		return self.__str__()
+
 def find_signer_in_list(signer_data_list, signer_data_target):
 	for signer_data_elem in signer_data_list:
 		if signer_data_target.is_pub_compatible(signer_data_elem):
+			return signer_data_elem
+	return None
+
+def find_signer_in_list_by_name(signer_data_list, name):
+	for signer_data_elem in signer_data_list:
+		if signer_data_elem.name == name:
 			return signer_data_elem
 	return None
 

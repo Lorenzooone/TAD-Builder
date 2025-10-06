@@ -8,6 +8,8 @@ desc_create_tmd="Builds the TMD (Title MetaData) corresponding to a NDS ROM."
 desc_create_cert="Builds a certificate which could be used to sign files."
 desc_create_tad="Builds the TAD file from a NDS ROM."
 desc_create_tad_nosign="Builds a non-encrypted TAD file from a NDS ROM."
+desc_read_tad="Dumps the contents of a TAD file, and creates a specs file to re-create it."
+desc_read_wad="Dumps the contents of a WAD file, and creates a specs file to re-create it."
 
 omittable_with_dash_text = "Can be omitted with a '-'."
 optional_text = "Optional parameter."
@@ -37,10 +39,16 @@ out_path_param = "out_path"
 out_path_param_desc = "output path."
 out_path_no_extension_param = "out_path_no_extension"
 out_path_no_extension_param_desc = "output path without any extension."
+base_out_path_param = "base_out_path"
+base_out_path_param_desc = "base output path used to determine final file output paths."
 new_key_name_param = "new_key_partial_name"
 new_key_name_param_desc = "partial name of the new signing key (e.g. HBTMDDSI)."
 cert_chain_param = "cert_chain_file"
 cert_chain_param_desc = "file containing the certificate chain."
+tad_file_param = "tad_file"
+tad_file_param_desc = "TAD file."
+wad_file_param = "wad_file"
+wad_file_param_desc = "WAD file."
 
 class HelpText:
 	def __init__(self, command, description):
@@ -135,6 +143,16 @@ inner_help_create_tad_no_sign = HelpText(command_create_tad_nosign, desc_create_
 inner_help_create_tad_no_sign.add_param(nds_rom_file_param, nds_rom_file_param_desc)
 inner_help_create_tad_no_sign.add_param(out_path_param, out_path_param_desc, optionality=True)
 
+inner_help_read_tad = HelpText(command_read_tad, desc_read_tad)
+inner_help_read_tad.add_param(tad_file_param, tad_file_param_desc)
+inner_help_read_tad.add_param(common_key_param, common_key_param_desc, dash_omittable=True)
+inner_help_read_tad.add_param(base_out_path_param, base_out_path_param_desc, optionality=True)
+
+inner_help_read_wad = HelpText(command_read_wad, desc_read_wad)
+inner_help_read_wad.add_param(wad_file_param, wad_file_param_desc)
+inner_help_read_wad.add_param(common_key_param, common_key_param_desc, dash_omittable=True)
+inner_help_read_wad.add_param(base_out_path_param, base_out_path_param_desc, optionality=True)
+
 def add_inner_help_to_dict(help_dict, help_entry):
 	help_dict[help_entry.command] = help_entry
 
@@ -147,3 +165,5 @@ add_inner_help_to_dict(inner_help_dict, inner_help_create_tmd)
 add_inner_help_to_dict(inner_help_dict, inner_help_create_cert)
 add_inner_help_to_dict(inner_help_dict, inner_help_create_tad)
 add_inner_help_to_dict(inner_help_dict, inner_help_create_tad_no_sign)
+add_inner_help_to_dict(inner_help_dict, inner_help_read_tad)
+add_inner_help_to_dict(inner_help_dict, inner_help_read_wad)

@@ -4,7 +4,7 @@ from python_files.key_file_reader_writer import read_key_file, write_key_file
 from python_files.ticket import ticket_create_rom
 from python_files.tmd import tmd_create_rom, tmd_create_solo_nds_rom
 from python_files.cert import cert_create
-from python_files.tad import tad_create_rom, tad_create_solo_nds_rom
+from python_files.tad import tad_create_rom, tad_create_solo_nds_rom, tad_extract
 from python_files.signer import Signer
 from python_files.file_io import *
 from python_files.menu_commands import *
@@ -217,6 +217,26 @@ def main_create_tad_no_sign(filtered_argv, menu_option):
 		out_path = filtered_argv[1]
 	main_create_tad([filtered_argv[0], "-", "-", "-", "-", "-", out_path], menu_option)
 
+# Reads the content from a TAD/WAD. Extracts the files and then
+# creates a .specs file to build it back.
+def main_read_tad(filtered_argv, menu_option):
+	tad_data = read_file_bytes(filtered_argv[0], accept_dash=False)
+	if tad_data is None:
+		return
+	common_key = read_file_bytes(filtered_argv[1])
+	out = tad_extract(tad_data, common_key)
+
+	base_out_path = ""
+	if len(filtered_argv) > 2:
+		base_out_path = filtered_argv[2]
+
+	if(base_out_path == "-"):
+		return
+
+	write_file_lines(base_out_path + out.get_title_id_name() + ".specs", out.specs_str())
+	for single_cmd in out.cmds:
+		write_file_bytes(base_out_path + single_cmd.content_filename, single_cmd.decrypted_content)
+
 def print_menus_data(menus):
 	print("-h/--help: an help page. For commands as well.")
 	print("Available commands:\n")
@@ -233,6 +253,8 @@ def init_menus():
 	menus += [MenuEntry(command_create_cert, main_create_cert)]
 	menus += [MenuEntry(command_create_tad, main_create_tad)]
 	menus += [MenuEntry(command_create_tad_nosign, main_create_tad_no_sign)]
+	menus += [MenuEntry(command_read_tad, main_read_tad)]
+	menus += [MenuEntry(command_read_wad, main_read_tad)]
 
 	return menus
 

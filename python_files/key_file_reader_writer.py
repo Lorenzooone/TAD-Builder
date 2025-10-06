@@ -1,15 +1,11 @@
 from .key_sig import getKeyForSigningKind
 from .file_io import *
+from .utils import *
 
 def read_key_file_value(lines, start_index):
 	size_value = int(lines[start_index].strip())
 
-	list_bytes = []
-	hex_to_read = lines[start_index + 1].strip().split()
-	for i in range(size_value):
-		list_bytes += [int(hex_to_read[i], 16)]
-
-	return bytes(list_bytes)
+	return hex_str_to_bytes_list(lines[start_index + 1], size_value)
 
 # Obtains the RSA key from an input .key file.
 def read_key_file(filename):
@@ -33,7 +29,7 @@ def read_key_file(filename):
 
 	return kind, pub_exp, modulus, priv_exp
 
-def key_value_to_string(value, size):
+def key_value_to_string(value):
 	if len(value) == 0:
 		return "1\n00"
 
@@ -41,11 +37,7 @@ def key_value_to_string(value, size):
 		value = value[1:]
 
 	out_str = str(len(value)) + "\n"
-
-	for i in range(len(value)):
-		out_str +=  ("%02x" % value[i]) + " "
-
-	return out_str
+	return out_str + bytes_list_to_hex_str(value)
 
 # Writes the RSA key to an output .key file.
 def write_key_file(filename, pub_exp, modulus, priv_exp, key_kind="rsa2048"):
@@ -57,8 +49,8 @@ def write_key_file(filename, pub_exp, modulus, priv_exp, key_kind="rsa2048"):
 
 	out_total = key_kind + "\n"
 
-	out_total += key_value_to_string(pub_exp, size_keys) + "\n"
-	out_total += key_value_to_string(modulus, size_keys) + "\n"
-	out_total += key_value_to_string(priv_exp, size_keys) + "\n"
+	out_total += key_value_to_string(pub_exp) + "\n"
+	out_total += key_value_to_string(modulus) + "\n"
+	out_total += key_value_to_string(priv_exp) + "\n"
 
 	write_file_lines(filename, out_total)

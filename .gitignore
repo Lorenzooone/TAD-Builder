@@ -1,5 +1,7 @@
 *.exe
 *.tad
+*.wad
+*.elf
 *.srl
 *.bak
 *.dsi
@@ -20,4 +22,5 @@ cfeirlte*
 *.sys
 *.aesKey
 *.eccPubKey
+*.specs
 *__pycache__/

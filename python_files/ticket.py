@@ -1,7 +1,7 @@
-from .enc_dec import sign_data, create_id, encrypt_title_key, decrypt_title_key
+from .enc_dec import sign_data, create_id, encrypt_title_key, decrypt_title_key, signature_pos
 from .nds_rom_header import *
 from .utils import *
-from .key_sig import getKeySignatureKind
+from .key_sig import getKeySignatureKind, getKeySignatureKindFromBytes
 
 ticket_size_base = 0x164
 
@@ -74,6 +74,40 @@ def ticket_create(ecdh_data, common_key, title_id, title_version, signer_data):
 
 	ticket = sign_data(bytes(ticket), signer_data)
 	return title_key, ticket
+
+class DataTicket:
+	def __init__(self, title_id=None, title_version=None, dec_title_key=None, signer_name="TIK"):
+		self.title_id = title_id
+		self.title_version = title_version
+		self.dec_title_key = dec_title_key
+		self.signer_name = signer_name
+
+# Reads a ticket and returns title_id, title_version, decrypted_title_key
+# and name of the signer.
+# As a DataTicket object.
+# Returns None in case of error.
+def read_ticket(data_start, common_key):
+	if len(data_start) < signature_pos:
+		return None
+
+	sig_type_bytes = data_start[:signature_pos]
+	key_signature_kind = getKeySignatureKindFromBytes(sig_type_bytes)
+
+	if key_signature_kind is None:
+		return None
+
+	data_pos = key_signature_kind.tosign_pos
+
+	if len(data_start) < (data_pos + ticket_size_base):
+		return None
+
+	title_id = data_start[data_pos + title_id_offset:data_pos + title_id_offset + dsi_title_id_size]
+	title_version = data_start[data_pos + title_version_offset:data_pos + title_version_offset + dsi_version_size]
+	enc_title_key = data_start[data_pos + enc_title_key_offset:data_pos + enc_title_key_offset + enc_title_key_size]
+	dec_title_key = decrypt_title_key(title_id, enc_title_key, common_key)
+	signer_name = read_string_from_list_of_bytes(data_start, data_pos + signer_offset, signer_size)
+
+	return DataTicket(title_id=title_id, title_version=title_version, dec_title_key=dec_title_key, signer_name=signer_name)
 
 # Creates the title_key and the ticket for a NDS ROM.
 # Extracts the title_id and title_version, which are used by ticket_create.

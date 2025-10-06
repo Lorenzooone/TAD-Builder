@@ -84,9 +84,9 @@ def read_cert(data_start):
 	if data_start[data_pos + key_name_offset + signer_size - 1] != 0:
 		return None
 
-	signer_name = data_start[data_pos + signer_offset:data_pos + signer_offset + signer_size].decode("ascii").replace("\x00", "")
+	signer_name = read_string_from_list_of_bytes(data_start, data_pos + signer_offset, signer_size)
 
-	key_name = data_start[data_pos + key_name_offset:data_pos + key_name_offset + signer_size].decode("ascii").replace("\x00", "")
+	key_name = read_string_from_list_of_bytes(data_start, data_pos + key_name_offset, signer_size)
 
 	total_name = signer_name + "-" + key_name
 
