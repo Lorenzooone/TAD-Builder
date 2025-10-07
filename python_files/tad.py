@@ -162,7 +162,7 @@ class DataTAD:
 	def get_title_id_name(self):
 		return bytes_list_to_hex_str(self.title_id, spacer = "") + "_" + bytes_list_to_hex_str(self.title_version, spacer = "")
 
-	def specs_str(self):
+	def specs_str(self, file_preamble = ""):
 		out_str = ""
 		out_str += "TADWAD SPECS: " + str(DataTAD.datatad_version) + "\n"
 		out_str += DataTAD.import_str_specs_str + ": " + self.curr_import_string + "\n"
@@ -173,7 +173,7 @@ class DataTAD:
 		out_str += DataTAD.num_cmds_specs_str + ": " + str(len(self.cmds)) + "\n"
 
 		for i in range(len(self.cmds)):
-			out_str += self.cmds[i].specs_str(DataTAD.base_cmd_specs_str + str(i))
+			out_str += self.cmds[i].specs_str(DataTAD.base_cmd_specs_str + " " + str(i), file_preamble=file_preamble)
 
 		return out_str
 

@@ -56,12 +56,15 @@ class DataCMD:
 			return "1"
 		return "0"
 
-	def specs_str(self, preamble):
+	def get_content_filename(self, file_preamble=""):
+		return file_preamble + self.content_filename
+
+	def specs_str(self, preamble, file_preamble = ""):
 		out_str = ""
 		out_str += preamble + " " + DataCMD.content_id_specs_str + ": " + bytes_list_to_hex_str(self.content_id) + "\n"
 		out_str += preamble + " " + DataCMD.type_content_specs_str + ": " + bytes_list_to_hex_str(self.type_content) + "\n"
 		out_str += preamble + " " + DataCMD.is_boot_specs_str + ": " + self.get_boot_content_str() + "\n"
-		out_str += preamble + " " + DataCMD.content_filename_specs_str + ": " + self.content_filename + "\n"
+		out_str += preamble + " " + DataCMD.content_filename_specs_str + ": " + self.get_content_filename(file_preamble=file_preamble) + "\n"
 
 		return out_str
 		

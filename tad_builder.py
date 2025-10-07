@@ -233,9 +233,9 @@ def main_read_tad(filtered_argv, menu_option):
 	if(base_out_path == "-"):
 		return
 
-	write_file_lines(base_out_path + out.get_title_id_name() + ".specs", out.specs_str())
+	write_file_lines(base_out_path + out.get_title_id_name() + ".specs", out.specs_str(file_preamble=base_out_path))
 	for single_cmd in out.cmds:
-		write_file_bytes(base_out_path + single_cmd.content_filename, single_cmd.decrypted_content)
+		write_file_bytes(single_cmd.get_content_filename(file_preamble=base_out_path), single_cmd.decrypted_content)
 
 def print_menus_data(menus):
 	print("-h/--help: an help page. For commands as well.")
