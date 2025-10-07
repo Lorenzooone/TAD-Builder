@@ -149,6 +149,7 @@ class DataTAD:
 	group_id_specs_str = "GROUP ID"
 	num_cmds_specs_str = "NUM_CMDS"
 	base_cmd_specs_str = "CMD"
+	datatad_version = 1
 
 	def __init__(self, curr_import_string=base_import_string, title_id=None, title_version=None, title_type=None, group_id=None, cmds=[]):
 		self.curr_import_string=curr_import_string
@@ -163,6 +164,7 @@ class DataTAD:
 
 	def specs_str(self):
 		out_str = ""
+		out_str += "TADWAD SPECS: " + str(DataTAD.datatad_version) + "\n"
 		out_str += DataTAD.import_str_specs_str + ": " + self.curr_import_string + "\n"
 		out_str += DataTAD.title_id_specs_str + ": " + bytes_list_to_hex_str(self.title_id) + "\n"
 		out_str += DataTAD.title_version_specs_str + ": " + bytes_list_to_hex_str(self.title_version) + "\n"
