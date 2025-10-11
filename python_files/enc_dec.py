@@ -1,7 +1,7 @@
 from Crypto.PublicKey import RSA
 import pyaes
 import hashlib
-from .nds_rom_header import *
+from .nds_rom_header_wii_data import *
 from .utils import *
 from .signer import Signer
 from .key_sig import *
@@ -148,6 +148,7 @@ def nds_rom_to_enc_content_init_iv(nds_rom, title_key):
 
 # Returns the properly padded sha1 of to_check.
 # Currently only supports RSA2048.
+# WAD tickets have slightly different padding...?
 def get_padded_sha1(to_check, kind):
 	expected_sha1 = bytes([0])
 	if kind == "rsa2048":
@@ -177,7 +178,16 @@ def is_signature_valid(data, signer_data):
 		# ECDH not currently supported here!
 		hash_signature = pow(signature, int_signer_pub_exp, int_signer_modulus)
 
-	return hash_signature.to_bytes(sig_size, 'big') == expected_sha1
+	hash_signature = hash_signature.to_bytes(sig_size, 'big')
+	if hash_signature == expected_sha1:
+		return True
+
+	if hash_signature[-sha1_size_bytes:] == expected_sha1[-sha1_size_bytes:]:
+		print("INFO: Hash bytes match, but not preamble.")
+		#print("0x" + bytes_list_to_hex_str(hash_signature[:-sha1_size_bytes], spacer=", 0x"))
+		return True
+
+	return False
 
 # Signs a block of data.
 # Currently only supports RSA2048 and RSA4096 private key.

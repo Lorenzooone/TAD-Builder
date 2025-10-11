@@ -1,5 +1,5 @@
 from .enc_dec import sign_data, create_id, encrypt_title_key, decrypt_title_key, signature_pos
-from .nds_rom_header import *
+from .nds_rom_header_wii_data import *
 from .utils import *
 from .key_sig import getKeySignatureKind, getKeySignatureKindFromBytes
 
@@ -16,6 +16,8 @@ ticket_id_size = 0x08
 console_id_offset = 0x98
 console_id_size = 0x04
 title_id_offset = 0x9C
+wad_ffs_offset = 0xA4
+wad_ffs_size = 2
 title_version_offset = 0xA6
 unknown_offset = 0xE1
 unknown_value_observed = 0x84 # ???
@@ -30,7 +32,7 @@ ff_fill_size = 0x20
 # The uncrypted title_key is returned as it is used to encrypt
 # the content (e.g. the NDS ROM) in later functions.
 # Returns an empty ticket in case of an error.
-def ticket_create(ecdh_data, common_key, title_id, title_version, signer_data):
+def ticket_create(ecdh_data, common_key, title_id, title_version, signer_data, is_tad):
 	title_key = create_id("title", title_id)[:enc_title_key_size]
 	enc_title_key = encrypt_title_key(title_id, title_key, common_key)
 	dec_title_key = decrypt_title_key(title_id, enc_title_key, common_key)
@@ -65,6 +67,9 @@ def ticket_create(ecdh_data, common_key, title_id, title_version, signer_data):
 
 	write_bytes_to_list_of_bytes(ticket, data_pos + title_id_offset, title_id)
 
+	if not is_tad:
+		for i in range(wad_ffs_size):
+			ticket[data_pos + wad_ffs_offset + i] = 0xFF
 	write_bytes_to_list_of_bytes(ticket, data_pos + title_version_offset, title_version)
 
 	ticket[data_pos + unknown_offset] = unknown_value_observed
@@ -109,9 +114,13 @@ def read_ticket(data_start, common_key):
 
 	return DataTicket(title_id=title_id, title_version=title_version, dec_title_key=dec_title_key, signer_name=signer_name)
 
+# Creates the title_key and the ticket.
+# Method created to be specular to TMD.
+def ticket_create_all(ecdh_data, common_key, title_id, title_version, signer_data, is_tad):
+	return ticket_create(ecdh_data, common_key, title_id, title_version, signer_data, is_tad)
+
 # Creates the title_key and the ticket for a NDS ROM.
 # Extracts the title_id and title_version, which are used by ticket_create.
 def ticket_create_rom(nds_rom, ecdh_data, common_key, signer_data):
-	title_id = get_title_id_from_rom(nds_rom)
-	title_version = nds_rom[nds_rom_location_version:nds_rom_location_version + dsi_version_size]
-	return ticket_create(ecdh_data, common_key, title_id, title_version, signer_data)
+	nds_rom_header_data = NDSRomHeaderTADInfo(nds_rom)
+	return ticket_create_all(ecdh_data, common_key, nds_rom_header_data.title_id, nds_rom_header_data.title_version, signer_data, True)

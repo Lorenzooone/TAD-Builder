@@ -1,6 +1,6 @@
 from .enc_dec import sign_data, create_id, encrypt_title_key, decrypt_title_key, pad_data_to_enc, signature_pos
-from .cmd import cmd_create_dsi, cmd_get_content_base_id_dsi_rom, read_cmd, cmd_size
-from .nds_rom_header import *
+from .cmd import cmd_create_all, read_cmd, cmd_size
+from .nds_rom_header_wii_data import *
 from .utils import *
 from .key_sig import getKeySignatureKind, getKeySignatureKindFromBytes
 
@@ -8,13 +8,19 @@ tmd_size_base = 0xA4
 
 signer_offset = 0
 signer_size = 0x40
+sys_version_offset = 0x44
 title_id_offset = 0x4C
 title_type_offset = 0x54
 title_type_size = 4
 group_id_offset = 0x58
-public_sav_size_offset = 0x5A
-private_sav_size_offset = 0x5E
-parental_control_offset = 0x6A
+tad_public_sav_size_offset = 0x5A
+tad_private_sav_size_offset = 0x5E
+tad_parental_control_offset = 0x6A
+wad_region_offset = 0x5C
+wad_region_size = 2
+wad_parental_control_offset = 0x5E
+wad_ipc_mask_offset = 0x7A
+wad_ipc_mask_size = 12
 access_rights_offset = 0x98
 access_rights_size = 4
 title_version_offset = 0x9C
@@ -25,7 +31,7 @@ boot_content_size = 2
 
 # Creates the initial part of a TMD (Title MetaData). Before any CMD (Content MetaData).
 # Returns an empty list in case of an error.
-def tmd_create_base(title_id, title_version, group_id, title_type, pubic_sav_size, private_sav_size, parental_control, signer_data):
+def tmd_create_base(title_id, title_version, group_id, title_type, pubic_sav_size, private_sav_size, parental_control, sys_version, signer_data, is_tad):
 	key_signature_kind = getKeySignatureKind(signer_data.kind)
 	if key_signature_kind is None:
 		print("Issue finding signature key")
@@ -39,17 +45,30 @@ def tmd_create_base(title_id, title_version, group_id, title_type, pubic_sav_siz
 
 	write_bytes_to_list_of_bytes(tmd, data_pos + signer_offset, signer_name_bytes)
 
+	if sys_version is None:
+		sys_version = bytes([0] * sys_version_size)
+
+	write_bytes_to_list_of_bytes(tmd, data_pos + sys_version_offset, sys_version)
+
 	write_bytes_to_list_of_bytes(tmd, data_pos + title_id_offset, title_id)
 
 	write_int_to_list_of_bytes(tmd, data_pos + title_type_offset, title_type, title_type_size)
 
 	write_bytes_to_list_of_bytes(tmd, data_pos + group_id_offset, group_id)
 
-	write_bytes_to_list_of_bytes(tmd, data_pos + public_sav_size_offset, pubic_sav_size)
+	if parental_control is None:
+		parental_control = bytes([parental_control_full_access_byte] * dsi_parental_control_size)
 
-	write_bytes_to_list_of_bytes(tmd, data_pos + private_sav_size_offset, private_sav_size)
+	if is_tad:
+		write_bytes_to_list_of_bytes(tmd, data_pos + tad_public_sav_size_offset, pubic_sav_size)
 
-	write_bytes_to_list_of_bytes(tmd, data_pos + parental_control_offset, parental_control)
+		write_bytes_to_list_of_bytes(tmd, data_pos + tad_private_sav_size_offset, private_sav_size)
+
+		write_bytes_to_list_of_bytes(tmd, data_pos + tad_parental_control_offset, parental_control)
+	else:
+		write_int_to_list_of_bytes(tmd, data_pos + wad_region_offset, region_free_wad_region, wad_region_size)
+
+		write_bytes_to_list_of_bytes(tmd, data_pos + wad_parental_control_offset, parental_control)
 
 	write_int_to_list_of_bytes(tmd, data_pos + access_rights_offset, 0, access_rights_size)
 
@@ -58,7 +77,7 @@ def tmd_create_base(title_id, title_version, group_id, title_type, pubic_sav_siz
 	return tmd
 
 # Completes the creation of a TMD by appending CMDs.
-def tmd_add_content_multiple(tmd, data_list, boot_content_index, content_base_id, signer_data):
+def tmd_add_content_multiple(tmd, data_list, boot_content_index, content_base_id, signer_data, cmds_list):
 	key_signature_kind = getKeySignatureKind(signer_data.kind)
 	if key_signature_kind is None:
 		print("Issue finding signature key")
@@ -66,6 +85,10 @@ def tmd_add_content_multiple(tmd, data_list, boot_content_index, content_base_id
 	data_pos = key_signature_kind.tosign_pos
 
 	num_contents = len(data_list)
+
+	if (cmds_list is not None) and (len(cmds_list) != num_contents):
+		print("cmds_list information has issues... Discarding it!")
+		cmds_list = None
 
 	if num_contents <= 0:
 		print("TMD num contents error!")
@@ -79,8 +102,12 @@ def tmd_add_content_multiple(tmd, data_list, boot_content_index, content_base_id
 
 	write_int_to_list_of_bytes(tmd, data_pos + boot_content_offset, boot_content_index, boot_content_size)
 
+	content_id_str_list = []
 	for i in range(num_contents):
-		tmd += cmd_create_dsi(content_base_id, i, data_list[i])
+		corresponding_cmd = None
+		if cmds_list is not None:
+			corresponding_cmd = cmds_list[i]
+		tmd += cmd_create_all(content_base_id, i, data_list[i], content_id_str_list, corresponding_cmd)
 
 	return tmd
 
@@ -90,9 +117,10 @@ def pad_data_list_for_tmd(data_list):
 	return data_list
 
 class DataTMD:
-	def __init__(self, title_id=None, title_version=None, title_type=None, group_id=None, contents=None, signer_name="TMD"):
+	def __init__(self, title_id=None, title_version=None, sys_version = None, title_type=None, group_id=None, contents=None, signer_name="TMD"):
 		self.title_id = title_id
 		self.title_version = title_version
+		self.sys_version = sys_version
 		self.title_type = title_type
 		self.group_id = group_id
 		self.cmds = contents
@@ -117,6 +145,7 @@ def read_tmd(data_start):
 	if len(data_start) < (data_pos + tmd_size_base):
 		return None
 
+	sys_version = data_start[data_pos + sys_version_offset:data_pos + sys_version_offset + sys_version_size]
 	title_id = data_start[data_pos + title_id_offset:data_pos + title_id_offset + dsi_title_id_size]
 	title_type = read_int_from_list_of_bytes(data_start, data_pos + title_type_offset, title_type_size)
 	group_id = data_start[data_pos + group_id_offset:data_pos + group_id_offset + nds_groud_id_size]
@@ -133,7 +162,22 @@ def read_tmd(data_start):
 			break
 		contents += [read_cmd(data_start[cmd_pos:], boot_index == i)]
 
-	return DataTMD(title_id=title_id, title_version=title_version, title_type=title_type, group_id=group_id, contents=contents, signer_name=signer_name)
+	return DataTMD(title_id=title_id, title_version=title_version, sys_version=sys_version, title_type=title_type, group_id=group_id, contents=contents, signer_name=signer_name)
+
+# Creates the TMD.
+# Supports multiple contents.
+# Calls tmd_create_base with the needed data.
+# Uses the signer and the private key to sign the TMD + CMD.
+def tmd_create_all(data_list, boot_content_index, title_id, title_version, title_type, group_id, public_sav_size, private_sav_size, parental_control, sys_version, signer_data, is_tad, cmds_list):
+	data_list = pad_data_list_for_tmd(data_list)
+
+	tmd = tmd_create_base(title_id, title_version, group_id, title_type, public_sav_size, private_sav_size, parental_control, sys_version, signer_data, is_tad)
+
+	tmd = tmd_add_content_multiple(tmd, data_list, boot_content_index, title_id, signer_data, cmds_list)
+
+	tmd = sign_data(bytes(tmd), signer_data)
+
+	return tmd
 
 # Creates the TMD for a NDS ROM.
 # Supports multiple contents.
@@ -142,23 +186,11 @@ def read_tmd(data_start):
 # Also appends the single CMD of the NDS ROM.
 # Uses the signer and the private key to sign the TMD + CMD.
 def tmd_create_rom(data_list, nds_rom_index, signer_data):
-	data_list = pad_data_list_for_tmd(data_list)
 	nds_rom = data_list[nds_rom_index]
 
-	title_id = get_title_id_from_rom(nds_rom)
-	title_version = nds_rom[nds_rom_location_version:nds_rom_location_version + dsi_version_size]
-	group_id = nds_rom[nds_rom_location_group_id:nds_rom_location_group_id + nds_groud_id_size]
-	pubic_sav_size = nds_rom[dsi_rom_location_public_sav_size:dsi_rom_location_public_sav_size + dsi_public_sav_size_size]
-	private_sav_size = nds_rom[dsi_rom_location_private_sav_size:dsi_rom_location_private_sav_size + dsi_private_sav_size_size]
-	parental_control = nds_rom[dsi_rom_location_parental_control:dsi_rom_location_parental_control + dsi_parental_control_size]
+	nds_rom_header_data = NDSRomHeaderTADInfo(nds_rom)
 
-	tmd = tmd_create_base(title_id, title_version, group_id, 0, pubic_sav_size, private_sav_size, parental_control, signer_data)
-
-	tmd = tmd_add_content_multiple(tmd, data_list, nds_rom_index, cmd_get_content_base_id_dsi_rom(nds_rom), signer_data)
-
-	tmd = sign_data(bytes(tmd), signer_data)
-
-	return tmd
+	return tmd_create_all(data_list, nds_rom_index, nds_rom_header_data.title_id, nds_rom_header_data.title_version, 0, nds_rom_header_data.group_id, nds_rom_header_data.public_sav_size, nds_rom_header_data.private_sav_size, nds_rom_header_data.parental_control, None, signer_data, True, None)
 
 # Creates the TMD for a NDS ROM.
 # Supports only one content.

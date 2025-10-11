@@ -1,5 +1,5 @@
 import math
-from .nds_rom_header import *
+from .nds_rom_header_wii_data import *
 from .utils import *
 
 # This file contains the basic data regarding the various key types,

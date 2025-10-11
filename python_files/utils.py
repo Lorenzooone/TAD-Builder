@@ -13,6 +13,8 @@ def read_string_from_list_of_bytes(target, offset, size):
 
 def bytes_list_to_hex_str(bytes_list, spacer=" "):
 	out_str = ""
+	if bytes_list is None:
+		return out_str
 	if len(bytes_list) < 1:
 		return out_str
 
@@ -25,13 +27,51 @@ def bytes_list_to_hex_str(bytes_list, spacer=" "):
 
 def hex_str_to_bytes_list(hex_str, num_values):
 	list_bytes = []
+
+	if hex_str is None:
+		return bytes(list_bytes)
+
 	hex_to_read = hex_str.strip().split()
 	for i in range(num_values):
 		list_bytes += [int(hex_to_read[i], 16)]
 
 	return bytes(list_bytes)
 
+def hex_str_to_bytes_list_no_spaces(hex_str, num_values):
+	list_bytes = []
+
+	if hex_str is None:
+		return None
+
+	if hex_str == "-" or hex_str == "":
+		return None
+
+	if len(hex_str) < (num_values * 2):
+		return None
+
+	hex_to_read = hex_str.strip()
+	for i in range(num_values):
+		list_bytes += [int(hex_to_read[i * 2:(i + 1) * 2], 16)]
+
+	return bytes(list_bytes)
+
+def int_str_to_int(int_str):
+	if int_str is None:
+		return None
+
+	if int_str == "-" or int_str == "":
+		return None
+
+	return int(int_str)
+
 def are_bytes_same(data, cmp_data):
+	if (data is None) and (cmp_data is None):
+		return True
+	if data is None:
+		return False
+	if cmp_data is None:
+		return False
+
 	if len(data) != len(cmp_data):
 		return False
 
@@ -40,3 +80,40 @@ def are_bytes_same(data, cmp_data):
 			return False
 
 	return True
+
+def index_of_string_start_in_list(string_list, wanted_start):
+	for i in range(len(string_list)):
+		if string_list[i].startswith(wanted_start):
+			return i
+	return None
+
+def read_string_of_string_start_in_list(string_list, wanted_start, extra=": "):
+	ret = index_of_string_start_in_list(string_list, wanted_start + extra)
+	if ret is None:
+		return None
+
+	manip_string = string_list[ret][len(wanted_start + extra):].strip()
+	return manip_string
+
+def read_int_of_string_start_in_list(string_list, wanted_start, extra=": "):
+	ret = read_string_of_string_start_in_list(string_list, wanted_start, extra=extra)
+	if ret is None:
+		return None
+
+	return int(ret)
+
+def read_bool_of_string_start_in_list(string_list, wanted_start, extra=": "):
+	ret = read_string_of_string_start_in_list(string_list, wanted_start, extra=extra)
+	if ret is None:
+		return None
+
+	if ret == "0":
+		return False
+	return True
+
+def read_bytes_of_string_start_in_list(string_list, wanted_start, num_bytes, extra=": "):
+	ret = read_string_of_string_start_in_list(string_list, wanted_start, extra=extra)
+	if ret is None:
+		return None
+
+	return hex_str_to_bytes_list(ret, num_bytes)

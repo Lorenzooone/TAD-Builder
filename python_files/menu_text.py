@@ -8,8 +8,12 @@ desc_create_tmd="Builds the TMD (Title MetaData) corresponding to a NDS ROM."
 desc_create_cert="Builds a certificate which could be used to sign files."
 desc_create_tad="Builds the TAD file from a NDS ROM."
 desc_create_tad_nosign="Builds a non-encrypted TAD file from a NDS ROM."
-desc_read_tad="Dumps the contents of a TAD file, and creates a specs file to re-create it."
-desc_read_wad="Dumps the contents of a WAD file, and creates a specs file to re-create it."
+desc_read_tad="Dumps the contents of a TAD file, and creates a .specs file to re-create it."
+desc_read_wad="Dumps the contents of a WAD file, and creates a .specs file to re-create it."
+desc_create_wad="Builds the WAD file from a Wii Executable."
+desc_create_wad_nosign="Builds a non-encrypted WAD file from a Wii Executable."
+desc_create_specs="Builds a TAD or WAD file from a given .specs file."
+desc_create_specs_nosign="Builds a non-encrypted TAD or WAD file from a given .specs file."
 
 omittable_with_dash_text = "Can be omitted with a '-'."
 optional_text = "Optional parameter."
@@ -49,6 +53,24 @@ tad_file_param = "tad_file"
 tad_file_param_desc = "TAD file."
 wad_file_param = "wad_file"
 wad_file_param_desc = "WAD file."
+banner_file_param = "banner_file"
+banner_file_param_desc = "Wii banner file."
+nand_boot_file_param = "nand_boot_program_file"
+nand_boot_file_param_desc = "Wii NAND Boot Program file."
+specs_file_param = "specs_file"
+specs_file_param_desc = "build .specs file."
+target_wii_file_param = "wii_executable_file"
+target_wii_file_param_desc = "file contaning the target Wii Executable."
+title_id_param = "title_id"
+title_id_param_desc = "hexadecimal string containing the title id (default: 0001000154455354)."
+title_version_param = "title_version"
+title_version_param_desc = "hexadecimal string containing the title version (default: 0000)."
+system_version_param = "system_version"
+system_version_param_desc = "hexadecimal string containing the system version (default: 0000000100000038)."
+title_type_param = "title_type"
+title_type_param_desc = "number representing the title type (default: 1)."
+group_id_param = "group_id"
+group_id_param_desc = "hexadecimal text containing the group id (default: 3030)."
 
 class HelpText:
 	def __init__(self, command, description):
@@ -153,6 +175,46 @@ inner_help_read_wad.add_param(wad_file_param, wad_file_param_desc)
 inner_help_read_wad.add_param(common_key_param, common_key_param_desc, dash_omittable=True)
 inner_help_read_wad.add_param(base_out_path_param, base_out_path_param_desc, optionality=True)
 
+inner_help_create_wad = HelpText(command_create_wad, desc_create_wad)
+inner_help_create_wad.add_param(target_wii_file_param, target_wii_file_param_desc)
+inner_help_create_wad.add_param(nand_boot_file_param, nand_boot_file_param_desc)
+inner_help_create_wad.add_param(banner_file_param, banner_file_param_desc, dash_omittable=True)
+inner_help_create_wad.add_param(title_id_param, title_id_param_desc, dash_omittable=True)
+inner_help_create_wad.add_param(title_version_param, title_version_param_desc, dash_omittable=True)
+inner_help_create_wad.add_param(system_version_param, system_version_param_desc, dash_omittable=True)
+inner_help_create_wad.add_param(title_type_param, title_type_param_desc, dash_omittable=True)
+inner_help_create_wad.add_param(group_id_param, group_id_param_desc, dash_omittable=True)
+inner_help_create_wad.add_param(cert_chain_param, cert_chain_param_desc, dash_omittable=True)
+inner_help_create_wad.add_param(ecdh_pubkey_param, ecdh_pubkey_param_desc, dash_omittable=True)
+inner_help_create_wad.add_param(common_key_param, common_key_param_desc, dash_omittable=True)
+inner_help_create_wad.add_param(ticket_key_file_param, ticket_key_file_param_desc, dash_omittable=True)
+inner_help_create_wad.add_param(tmd_key_file_param, tmd_key_file_param_desc, dash_omittable=True)
+inner_help_create_wad.add_param(out_path_param, out_path_param_desc, optionality=True)
+
+inner_help_create_wad_nosign = HelpText(command_create_wad_nosign, desc_create_wad_nosign)
+inner_help_create_wad_nosign.add_param(target_wii_file_param, target_wii_file_param_desc)
+inner_help_create_wad_nosign.add_param(nand_boot_file_param, nand_boot_file_param_desc)
+inner_help_create_wad_nosign.add_param(banner_file_param, banner_file_param_desc, dash_omittable=True)
+inner_help_create_wad_nosign.add_param(title_id_param, title_id_param_desc, dash_omittable=True)
+inner_help_create_wad_nosign.add_param(title_version_param, title_version_param_desc, dash_omittable=True)
+inner_help_create_wad_nosign.add_param(system_version_param, system_version_param_desc, dash_omittable=True)
+inner_help_create_wad_nosign.add_param(title_type_param, title_type_param_desc, dash_omittable=True)
+inner_help_create_wad_nosign.add_param(group_id_param, group_id_param_desc, dash_omittable=True)
+inner_help_create_wad_nosign.add_param(out_path_param, out_path_param_desc, optionality=True)
+
+inner_help_create_specs = HelpText(command_create_specs, desc_create_specs)
+inner_help_create_specs.add_param(specs_file_param, specs_file_param_desc)
+inner_help_create_specs.add_param(cert_chain_param, cert_chain_param_desc, dash_omittable=True)
+inner_help_create_specs.add_param(ecdh_pubkey_param, ecdh_pubkey_param_desc, dash_omittable=True)
+inner_help_create_specs.add_param(common_key_param, common_key_param_desc, dash_omittable=True)
+inner_help_create_specs.add_param(ticket_key_file_param, ticket_key_file_param_desc, dash_omittable=True)
+inner_help_create_specs.add_param(tmd_key_file_param, tmd_key_file_param_desc, dash_omittable=True)
+inner_help_create_specs.add_param(out_path_param, out_path_param_desc, optionality=True)
+
+inner_help_create_specs_nosign = HelpText(command_create_specs_nosign, desc_create_specs_nosign)
+inner_help_create_specs_nosign.add_param(specs_file_param, specs_file_param_desc)
+inner_help_create_specs_nosign.add_param(out_path_param, out_path_param_desc, optionality=True)
+
 def add_inner_help_to_dict(help_dict, help_entry):
 	help_dict[help_entry.command] = help_entry
 
@@ -167,3 +229,7 @@ add_inner_help_to_dict(inner_help_dict, inner_help_create_tad)
 add_inner_help_to_dict(inner_help_dict, inner_help_create_tad_no_sign)
 add_inner_help_to_dict(inner_help_dict, inner_help_read_tad)
 add_inner_help_to_dict(inner_help_dict, inner_help_read_wad)
+add_inner_help_to_dict(inner_help_dict, inner_help_create_wad)
+add_inner_help_to_dict(inner_help_dict, inner_help_create_wad_nosign)
+add_inner_help_to_dict(inner_help_dict, inner_help_create_specs)
+add_inner_help_to_dict(inner_help_dict, inner_help_create_specs_nosign)

@@ -1,5 +1,5 @@
 from .enc_dec import get_sha1, create_id, sha1_size_bytes
-from .nds_rom_header import *
+from .nds_rom_header_wii_data import *
 from .utils import *
 
 cmd_size = 0x24
@@ -44,6 +44,8 @@ class DataCMD:
 		self.content_index = content_index
 		self.type_content = type_content
 		self.content_size = content_size
+		if is_boot_content is None:
+			is_boot_content = False
 		self.is_boot_content = is_boot_content
 		self.decrypted_content = decrypted_content
 		if content_filename is None:
@@ -56,6 +58,12 @@ class DataCMD:
 			return "1"
 		return "0"
 
+	def has_valid_filename(self):
+		return self.content_filename != ""
+
+	def can_be_used_to_build(self):
+		return self.decrypted_content is not None
+
 	def get_content_filename(self, file_preamble=""):
 		return file_preamble + self.content_filename
 
@@ -67,7 +75,16 @@ class DataCMD:
 		out_str += preamble + " " + DataCMD.content_filename_specs_str + ": " + self.get_content_filename(file_preamble=file_preamble) + "\n"
 
 		return out_str
-		
+
+	def read_specs(specs, index, preamble):
+		content_id = read_bytes_of_string_start_in_list(specs, preamble + " " + DataCMD.content_id_specs_str, content_id_size)
+		type_content = read_bytes_of_string_start_in_list(specs, preamble + " " + DataCMD.type_content_specs_str, content_type_size)
+		is_boot_content = read_bool_of_string_start_in_list(specs, preamble + " " + DataCMD.is_boot_specs_str)
+		content_filename = read_string_of_string_start_in_list(specs, preamble + " " + DataCMD.content_filename_specs_str)
+		if content_filename is None:
+			print(preamble + ": CONTENT FILENAME MISSING! SKIPPING!")
+			content_filename = ""
+		return DataCMD(content_id=content_id, content_index=index, type_content=type_content, is_boot_content=is_boot_content, content_filename=content_filename)
 
 # Reads the data of a cmd. Returns the content_id, the content_index,
 # the type_content, the content_size and whether the content is boot or not.
@@ -87,12 +104,34 @@ def read_cmd(data_start, is_boot_content):
 
 	return DataCMD(content_id=content_id, content_index=content_index, type_content=type_content, content_size=content_size, is_boot_content=is_boot_content)
 
-# Creates the CMD for a DSi file.
-# In theory it should also support non-ROM files.
-def cmd_create_dsi(content_base_id, index, decrypted_content):
-	content_id = create_id("content" + str(index), content_base_id)[:content_id_size]
-	return cmd_create(content_id, index, [0, 1], decrypted_content)
+def generate_content_id(content_base_id, index, content_id_str_list):
+	# Avoid duplicated content_ids.
+	content_id_str = ""
+	index_adder = 0
+	while content_id_str == "":
+		content_id = create_id("content" + str(index + index_adder), content_base_id)[:content_id_size]
+		content_id_str = bytes_list_to_hex_str(content_id)
+		if content_id_str in content_id_str_list:
+			index_adder += 1
+			content_id_str = ""
+	return content_id
 
-# Creates the CMD for a DSi ROM.
-def cmd_get_content_base_id_dsi_rom(uncrypted_nds_rom):
-	return get_title_id_from_rom(uncrypted_nds_rom)
+# Creates the CMD for a file.
+def cmd_create_all(content_base_id, index, decrypted_content, content_id_str_list, corresponding_cmd):
+	# Avoid duplicated content_ids.
+	content_id = None
+	content_type = None
+	if corresponding_cmd is not None:
+		content_type = corresponding_cmd.type_content
+	if content_type is None:
+		content_type = [0, 1]
+	if (corresponding_cmd is not None) and (corresponding_cmd.content_id is not None):
+		if bytes_list_to_hex_str(corresponding_cmd.content_id) not in content_id_str_list:
+			content_id = corresponding_cmd.content_id
+		else:
+			print("WARNING: Duplicate content_id found! Replacing user defined one!")
+	if content_id is None:
+		content_id = generate_content_id(content_base_id, index, content_id_str_list)
+	content_id_str = bytes_list_to_hex_str(content_id)
+	content_id_str_list += [content_id_str]
+	return cmd_create(content_id, index, content_type, decrypted_content)
