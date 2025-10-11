@@ -1,7 +1,7 @@
 # TADWAD Builder
-TADWAD Builder is a Python script to: build TADs, installable DSiWare channels; build WADs, installable WiiWare channels; as well as offering TAD/WAD related functions.
+TADWAD Builder is a Python script to: build TADs, installable DSiWare channels; build WADs, installable WiiWare channels; do other TAD/WAD related functions.
 
-TADWAD Builder in particular has the specs\_build, tad\_build, wad\_build commands to build homebrew TADs or WADs compatible with development consoles (via TwlNmenu or Nmenu).
+TADWAD Builder in particular has the specs\_build, tad\_build and wad\_build commands to build homebrew TADs or WADs compatible with development consoles (via TwlNmenu or Nmenu).
 
 specs\_build\_no\_sign, tad\_build\_no\_sign and wad\_build\_no\_sign can be used to build non-encrypted and non-signed homebrew TADs or WADs, which can be used with modified firmware on retail consoles.
 
@@ -29,18 +29,18 @@ Dependencies can be installed by using `pip install -r requirements.txt`.
 
 ## Building with .specs files
 Specs files can be used to store additional information to more easily build TADs and WADs.
-They can especially be used to create multi-content TADs and WADs, with user-chosen internal filenames.
+They can especially be useful to create multi-content TADs and WADs, with user-chosen internal filenames.
 
 It is recommended to use .specs files for complex build projects.
 
-The specs\_build and specs\_build\_no\_sign take as input .specs files, examples for both a TAD and a WAD are included in the examples folder.
+The specs\_build and specs\_build\_no\_sign commands take as input .specs files, examples for both a TAD and a WAD are included in the examples folder.
 
-Alternatively, tad\_read and wad\_read commands produce .specs files. These can be extracted from regularly built TADs and WADs (both regular ones and ones built with TADWAD Builder) and later adapted to fit the needs of the user.
+Alternatively, tad\_read and wad\_read commands also produce .specs files. These can be extracted from regularly built TADs and WADs (both regular ones and ones built with TADWAD Builder) and later adapted to fit the needs of the user.
 
 ## Building a TAD/WAD for Development Consoles
 To build a TAD/WAD compatible with development consoles, certain key files are required.
-- cfeirlte: certificate chain for the TAD. Used by Ticket and TMD. Raw bytes. Can be extracted by other development TADs/WADs.
-- xs_dpki.eccPubKey: Public ECDH key for the Ticket. Optional. Raw bytes. Can be extracted by other development TADs/WADs.
+- cfeirlte: certificate chain for the TAD. Used by Ticket and TMD. Raw bytes. Can be extracted from other development TADs/WADs.
+- xs_dpki.eccPubKey: Public ECDH key for the Ticket. Optional. Raw bytes. Can be extracted from other development TADs/WADs.
 - common_dpki.aesKey: Common AES key for the Ticket and content encryption. Raw bytes. Needs the development one (A1 60 4A 6A...). These keys can be dumped from the DSi bios7i. Also present in Wii BIOS.
 - xs\_dpki.rsa: File containing the private (and public) RSA2048 key to sign development Tickets. Format described below.
 - cp\_dpki.rsa: File containing the private (and public) RSA2048 key to sign development TMDs. Format described below.

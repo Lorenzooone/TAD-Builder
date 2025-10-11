@@ -19,9 +19,7 @@ dsi_rom_size_size = 8
 sys_version_size = 8
 parental_control_full_access_byte = 0x80
 region_free_wad_region = 3
-# I think this is a data title?! Maybe not though?!
 wii_title_is_data = [0, 1, 0, 5]
-#wii_title_is_data = [0, 1, 0, 8]
 
 boundary_align = 0x40
 

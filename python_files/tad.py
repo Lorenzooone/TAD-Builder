@@ -383,6 +383,7 @@ class DataTADWAD:
 		out_str += DataTADWAD.num_cmds_specs_str + ": " + str(len(self.cmds)) + "\n"
 
 		for i in range(len(self.cmds)):
+			out_str += "\n"
 			out_str += self.cmds[i].specs_str(DataTADWAD.base_cmd_specs_str + " " + str(i), file_preamble=file_preamble)
 
 		return out_str
