@@ -1,5 +1,5 @@
 from Crypto.PublicKey import RSA
-import pyaes
+from Crypto.Cipher import AES
 import hashlib
 from .nds_rom_header_wii_data import *
 from .utils import *
@@ -55,7 +55,7 @@ def decrypt_title_key(title_id, enc_title_key, common_key):
 	if common_key is None:
 		out = enc_title_key
 	else:
-		aes = pyaes.AESModeOfOperationCBC(common_key, iv=bytes(key_enc_iv))
+		aes = AES.new(common_key, AES.MODE_CBC, bytes(key_enc_iv))
 		out = aes.decrypt(enc_title_key)
 
 	return out
@@ -71,7 +71,7 @@ def encrypt_title_key(title_id, title_key, common_key):
 	if common_key is None:
 		out = title_key
 	else:
-		aes = pyaes.AESModeOfOperationCBC(common_key, iv=bytes(key_enc_iv))
+		aes = AES.new(common_key, AES.MODE_CBC, bytes(key_enc_iv))
 		out = aes.encrypt(title_key)
 
 	return out
@@ -102,7 +102,7 @@ def pad_data_to_enc(data):
 # content_iv is the index of the content inside the TAD.
 def data_to_enc_content(data, title_key, content_iv):
 
-	aes = pyaes.AESModeOfOperationCBC(title_key, iv=bytes(content_iv))
+	aes = AES.new(title_key, AES.MODE_CBC, bytes(content_iv))
 	out = []
 
 	data = pad_data_to_enc(data)
@@ -124,7 +124,7 @@ def data_to_enc_content_init_iv(data, index, title_key):
 # content_iv is the index of the content inside the TAD.
 def enc_content_to_data(data, title_key, content_iv):
 
-	aes = pyaes.AESModeOfOperationCBC(title_key, iv=bytes(content_iv))
+	aes = AES.new(title_key, AES.MODE_CBC, bytes(content_iv))
 	out = []
 
 	data = pad_data_to_enc(data)
